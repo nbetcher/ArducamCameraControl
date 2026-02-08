@@ -1,1 +1,166 @@
-/* TODO: Have your plugin's CSS files generated to here. */
+/* ── ArducamCameraControl plugin styles ──────────────────────────── */
+
+/* PTZ d-pad buttons */
+.arducam-box {
+  width: 52px;
+  height: 52px;
+}
+
+/* ── v4l2 dynamic controls ──────────────────────────────────────── */
+
+.arducam-v4l2-row {
+  margin-bottom: 10px;
+}
+
+.arducam-ctrl-group {
+  width: 100%;
+}
+
+.arducam-ctrl-label {
+  display: block;
+  margin-bottom: 2px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.arducam-ctrl-value {
+  font-weight: normal;
+  color: #888;
+  margin-left: 4px;
+}
+
+.arducam-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arducam-slider {
+  flex: 1;
+  margin: 0;
+}
+
+.arducam-reset {
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1;
+  padding: 4px 7px;
+}
+
+/* ── Toggle switch ──────────────────────────────────────────────── */
+
+.arducam-toggle-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.arducam-toggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.arducam-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.arducam-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #ccc;
+  border-radius: 22px;
+  transition: 0.2s;
+}
+
+.arducam-toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #fff;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+
+.arducam-toggle input:checked + .arducam-toggle-slider {
+  background-color: #08c;
+}
+
+.arducam-toggle input:checked + .arducam-toggle-slider::before {
+  transform: translateX(18px);
+}
+
+.arducam-toggle input:disabled + .arducam-toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Section spacing ────────────────────────────────────────────── */
+
+#arducam-camera-control .jog-panel {
+  margin-right: 10px;
+  vertical-align: top;
+}
+
+#arducam-v4l2-panel h1 {
+  margin-bottom: 8px;
+}
+
+/* ── Status / diagnostics panel ─────────────────────────────────── */
+
+#arducam-status-panel h1 {
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.arducam-status-body {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #666;
+}
+
+.arducam-status-body p {
+  margin: 0 0 8px;
+}
+
+#arducam-status-details {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+#arducam-status-details summary {
+  cursor: pointer;
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.arducam-diagnostics-dl {
+  margin: 0;
+  padding: 0;
+}
+
+.arducam-diagnostics-dl dt {
+  float: left;
+  clear: left;
+  width: 130px;
+  font-weight: bold;
+  color: #555;
+  margin: 0;
+  padding: 2px 0;
+}
+
+.arducam-diagnostics-dl dd {
+  margin-left: 140px;
+  padding: 2px 0;
+  color: #333;
+}

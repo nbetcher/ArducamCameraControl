@@ -1,46 +1,146 @@
-## Arducam Camera Control
+# Arducam Camera Control
 
-A plugin to control your arducam camera with motorized and ptz camera on octoprint.
+An OctoPrint plugin to control Arducam PTZ and motorized cameras.
+
+Controls are **discovered dynamically** — the plugin probes the camera
+at startup and only shows controls that your hardware actually supports.
 
 ![screenshot](extras/assets/img/plugins/ArducamCameraControl/ArducamCameraControl.png)
 
-## Hardware Install
+## Features
 
-Please follow the manufacturer's instructions.
+- **I2C PTZ controls** — Pan, tilt, zoom, focus and IR-cut filter for
+  Arducam cameras with a motor controller on address `0x0C`.
+- **Dynamic v4l2 controls** — Brightness, contrast, saturation,
+  white balance, exposure, sharpness, flip/mirror and any other control
+  your camera's v4l2 driver exposes.  Sliders, toggles, dropdowns and
+  buttons are generated automatically.
+- **Optional libcamera introspection** — If `picamera2` is installed the
+  plugin captures control metadata (ranges, defaults) via libcamera
+  *before* the webcam streamer starts.  This gives maximum-precision
+  feature-set data without interfering with the video feed.
+- **Refresh button** — Re-probe v4l2 controls at any time without
+  restarting OctoPrint (useful if you reconnect a USB camera).
+- **Thread-safe I2C** — A lock protects all bus operations so concurrent
+  requests cannot corrupt I2C transactions.
+- **Per-control validation** — The backend validates every value against
+  the control's minimum, maximum and step before sending it to the
+  driver.
 
-#### I2C 
-This plugin uses I2C to communicate with the camera.  That is not enabled by default.  The Arducam Camera Control plugin will not function until
-you enable I2C.
+## Requirements
 
-SSH to your octopi, install system dependencies and enable i2c:
+| Component        | Version / Notes                              |
+| ---------------- | -------------------------------------------- |
+| OctoPrint        | 1.9.0+                                       |
+| Python           | 3.7+                                         |
+| Raspberry Pi     | 3B+ or newer recommended                     |
+| OS               | Raspberry Pi OS Bookworm (or later)          |
+| `smbus2` (pip)   | Installed automatically with the plugin       |
+| `picamera2` (optional) | For libcamera introspection at startup  |
+
+## Hardware Setup
+
+Follow the manufacturer's instructions for physically connecting the camera.
+
+### Enable I2C
+
+I2C is required for PTZ motor control and is **not** enabled by default.
+
+1. **Edit `/boot/config.txt`** (or `/boot/firmware/config.txt` on Bookworm):
+
+   ```
+   dtparam=i2c_vc=on
+   dtparam=i2c_arm=on
+   ```
+
+2. **Enable the I2C kernel module** with `raspi-config`:
+
+   ```bash
+   sudo raspi-config
+   ```
+
+   → *3 Interfacing Options* → *P5 I2C* → *Yes*
+
+3. Reboot.
+
+### Optional: Install picamera2
+
+If you want the plugin to capture libcamera control metadata at startup:
+
 ```bash
-sudo apt update
-sudo apt install i2c-tools
-sudo nano /boot/config.txt
+sudo apt install -y python3-picamera2
 ```
-at the very end of the file add the following:
+
+The plugin works without it — picamera2 only provides supplementary
+introspection data (richer control names, float-precision ranges).
+All runtime control changes use v4l2.
+
+## Plugin Installation
+
+Install from the OctoPrint Plugin Manager:
+
+> **Plugin Manager → Get More → Search "ArducamCameraControl"**
+
+Or install manually:
+
 ```bash
-#ArduCamFocus
-dtparam=i2c_vc=on
-dtparam=i2c_arm=on
-```
-press ctrl+s to save and ctrl+x to exit
-
-
-Enable the I2C kernel module using raspi-config:
-```bash
-sudo raspi-config
+pip install https://github.com/arducam/ArducamCameraControl/archive/main.zip
 ```
 
-1. select "3 Interfacing Options"
-2. select "P5 I2C"
-3. raspi-config will ask, "Would you like the ARM I2C interface to be enabled?"
-4. select "Yes"
-5. you should see, "The ARM I2C interface is enabled"
-6. select "Finish"
+After restarting OctoPrint the camera controls appear in the **Control** tab.
 
+## Architecture
 
-#### Plugin  
-Install plugin from Plugin Manager > Get More and search for ArducamCameraControl.
+```
+  OctoPrint startup
+  ──────────────────────────────────────────────────────────
+  on_startup()        ← picamera2 probe (camera still free)
+       │                 captures libcamera control metadata
+       ▼                 closes camera immediately
+  on_after_startup()  ← I2C camera detection
+       │                 v4l2 ioctl probing (works alongside
+       │                 the streamer)
+       ▼
+  Server ready        ← webcamd / camera-streamer starts
+  ──────────────────────────────────────────────────────────
+  Runtime             ← all control reads / writes use v4l2
+                        ioctls (concurrent access OK)
+```
 
-After you restart, the camera should be controllable from OctoPrint's Control tab. 
+### Why v4l2 for runtime?
+
+On Raspberry Pi OS Bookworm, libcamera's v4l2 compatibility layer
+exposes all camera controls through standard `/dev/video*` devices.
+v4l2 ioctls work **while the streamer is running** — they do not need
+exclusive camera access.  This lets the plugin adjust brightness,
+contrast, exposure, etc. without interrupting the video feed.
+
+## API
+
+### GET endpoints (`on_api_get`)
+
+| `command`          | Parameters     | Returns                        |
+| ------------------ | -------------- | ------------------------------ |
+| `get_capabilities` | —              | Full capabilities payload      |
+| `get_focus`        | —              | `{value: <int>}`               |
+| `get_id`           | —              | Camera type ID string          |
+| `get_v4l2`         | `control_id`   | `{control_id, value}`          |
+
+### POST commands (`on_api_command`)
+
+| Command            | Payload                 | Description              |
+| ------------------ | ----------------------- | ------------------------ |
+| `set_v4l2`         | `{control_id, value}`   | Set a v4l2 control       |
+| `refresh_controls` | `{}`                    | Re-probe v4l2 controls   |
+| `ptz_tilt`         | `{value}`               | I2C tilt command         |
+| `ptz_pan`          | `{value}`               | I2C pan command          |
+| `ptz_zoom`         | `{value}`               | I2C zoom command         |
+| `ptz_focus`        | `{value}`               | I2C focus command        |
+| `ptz_ircut`        | `{value}`               | I2C IR-cut toggle        |
+
+All endpoints require the `PLUGIN_ARDUCAMCAMERACONTROL_ADMIN` permission.
+Write commands are rate-limited to one every 100 ms.
+
+## License
+
+AGPLv3

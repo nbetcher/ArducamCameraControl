@@ -14,11 +14,11 @@ plugin_package = "ArducamCameraControl"
 plugin_name = "ArducamCameraControl"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
-plugin_version = "0.4.0"
+plugin_version = "0.5.0"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
-plugin_description = """TODO"""
+plugin_description = """OctoPrint plugin for controlling Arducam PTZ and motorized cameras via I2C, v4l2, and libcamera."""
 
 # The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
 plugin_author = "Arducam"
@@ -33,7 +33,7 @@ plugin_url = "https://github.com/arducam/ArducamCameraControl"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = ['smbus']
+plugin_requires = ['smbus2']
 
 ### --------------------------------------------------------------------------------------------------------------------
 ### More advanced options that you usually shouldn't have to touch follow after this point
